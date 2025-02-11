@@ -1,6 +1,7 @@
 # Bloch-Sphere-Simulator
 
-![image](https://github.com/user-attachments/assets/5e6d9578-af40-41e3-b0e3-ab7c55681e08)
+![image](https://github.com/user-attachments/assets/51a9a964-48fd-43ae-af65-8cc98520ed0f)
+
 
 - [Bloch Sphere Simulator](https://miguell-j.github.io/Bloch-Sphere-Simulator/)
 
