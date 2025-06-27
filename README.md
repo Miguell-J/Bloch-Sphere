@@ -56,16 +56,6 @@ A cutting-edge, interactive web application for visualizing two-level quantum st
 - **WebGL (assumed)**: For rendering the 3D Bloch sphere.
 - **MathJax (assumed)**: For rendering quantum state notation (e.g., |ψ⟩).
 
-## 📂 Project Structure
-
-```plaintext
-quantum-bloch-sphere/
-├── bloch.html        # Main HTML file with the application
-├── css/              # (Optional) Stylesheets for custom styling
-├── js/               # (Optional) JavaScript for logic and rendering
-└── README.md         # This file
-```
-
 ## 🤝 Contributing
 
 Contributions are welcome! To contribute:
