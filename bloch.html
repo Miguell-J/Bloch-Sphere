@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloch Sphere</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    @keyframes purpleGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(147, 51, 234, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(147, 51, 234, 0.8), 0 0 30px rgba(168, 85, 247, 0.4); }
+    }
+    
+    @keyframes quantumPulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+    
+    @keyframes neonFlicker {
+      0%, 100% { text-shadow: 0 0 5px #9333ea, 0 0 10px #a855f7, 0 0 15px #c084fc; }
+      50% { text-shadow: 0 0 10px #9333ea, 0 0 20px #a855f7, 0 0 25px #c084fc, 0 0 30px #ddd6fe; }
+    }
+    
+    body {
+      font-family: 'Orbitron', monospace;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(147, 51, 234, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at center, #0a0a0f, #050208);
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 98px,
+          rgba(147, 51, 234, 0.03) 100px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 98px,
+          rgba(168, 85, 247, 0.03) 100px
+        );
+      pointer-events: none;
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, rgba(147, 51, 234, 0.1), transparent);
+    }
+    
+    .controls {
+      width: 360px;
+      background: 
+        linear-gradient(145deg, 
+          rgba(147, 51, 234, 0.1) 0%, 
+          rgba(168, 85, 247, 0.05) 50%, 
+          rgba(196, 132, 252, 0.08) 100%
+        );
+      backdrop-filter: blur(20px);
+      padding: 24px;
+      border-left: 2px solid rgba(147, 51, 234, 0.3);
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    .controls::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        linear-gradient(45deg, transparent 30%, rgba(147, 51, 234, 0.02) 50%, transparent 70%);
+      pointer-events: none;
+    }
+    
+    .control-group {
+      margin-bottom: 24px;
+      padding: 20px;
+      background: 
+        linear-gradient(135deg, 
+          rgba(147, 51, 234, 0.1) 0%, 
+          rgba(168, 85, 247, 0.05) 100%
+        );
+      border-radius: 16px;
+      border: 1px solid rgba(147, 51, 234, 0.2);
+      transition: all 0.3s ease;
+      animation: quantumPulse 4s ease-in-out infinite;
+    }
+    
+    .control-group:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(147, 51, 234, 0.3);
+      border-color: rgba(168, 85, 247, 0.5);
+    }
+    
+    .control-group h3 {
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #a855f7;
+      margin-bottom: 16px;
+      letter-spacing: 2px;
+      animation: neonFlicker 3s ease-in-out infinite;
+    }
+    
+    .control-item { 
+      margin-bottom: 16px; 
+      position: relative;
+    }
+    
+    .control-item label {
+      font-size: 12px;
+      color: #c084fc;
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      text-shadow: 0 0 5px rgba(192, 132, 252, 0.5);
+    }
+    
+    .slider {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, #1e1b4b, #312e81, #3730a3);
+      border-radius: 3px;
+      outline: none;
+      -webkit-appearance: none;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    
+    .slider:hover {
+      box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: 
+        radial-gradient(circle, 
+          #a855f7 0%, 
+          #9333ea 50%, 
+          #7c3aed 100%
+        );
+      border: 3px solid #c084fc;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 
+        0 0 15px rgba(168, 85, 247, 0.8),
+        0 0 25px rgba(147, 51, 234, 0.5),
+        inset 0 0 10px rgba(255, 255, 255, 0.2);
+      animation: purpleGlow 2s ease-in-out infinite;
+    }
+    
+    .value-display {
+      float: right;
+      color: #c084fc;
+      font-weight: 900;
+      font-size: 14px;
+      text-shadow: 0 0 8px rgba(192, 132, 252, 0.7);
+    }
+    
+    .button {
+      background: 
+        linear-gradient(135deg, 
+          rgba(147, 51, 234, 0.2) 0%, 
+          rgba(168, 85, 247, 0.1) 100%
+        );
+      border: 2px solid #9333ea;
+      color: #c084fc;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 12px;
+      margin: 6px 6px 0 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Orbitron', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .button:hover::before {
+      left: 100%;
+    }
+    
+    .button:hover {
+      background: 
+        linear-gradient(135deg, 
+          #9333ea 0%, 
+          #a855f7 100%
+        );
+      color: #000;
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 25px rgba(147, 51, 234, 0.5),
+        0 0 20px rgba(168, 85, 247, 0.8);
+      border-color: #c084fc;
+    }
+    
+    .button:active {
+      transform: translateY(0);
+      box-shadow: 
+        0 4px 15px rgba(147, 51, 234, 0.7),
+        inset 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .info-panel, .coordinates {
+      position: absolute;
+      background: 
+        linear-gradient(135deg, 
+          rgba(16, 16, 31, 0.9) 0%, 
+          rgba(30, 27, 75, 0.8) 100%
+        );
+      backdrop-filter: blur(15px);
+      padding: 16px;
+      border-radius: 16px;
+      font-size: 13px;
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      box-shadow: 0 8px 32px rgba(147, 51, 234, 0.3);
+    }
+    
+    .info-panel {
+      top: 24px;
+      left: 24px;
+      max-width: 320px;
+    }
+    
+    .info-panel h2 {
+      color: #a855f7;
+      font-size: 20px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      animation: neonFlicker 3s ease-in-out infinite;
+    }
+    
+    .info-panel p {
+      color: #c084fc;
+      line-height: 1.5;
+      text-shadow: 0 0 5px rgba(192, 132, 252, 0.3);
+    }
+    
+    .coordinates {
+      bottom: 24px;
+      left: 24px;
+      font-family: 'Orbitron', monospace;
+      color: #ddd6fe;
+    }
+    
+    .coordinates div {
+      margin-bottom: 4px;
+      text-shadow: 0 0 5px rgba(221, 214, 254, 0.5);
+    }
+    
+    .state-info {
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      color: #ddd6fe;
+      line-height: 1.6;
+    }
+    
+    .state-info div {
+      margin-bottom: 6px;
+      padding: 4px 8px;
+      background: rgba(147, 51, 234, 0.1);
+      border-radius: 6px;
+      border-left: 3px solid #9333ea;
+      text-shadow: 0 0 5px rgba(221, 214, 254, 0.3);
+    }
+    
+    #current-state {
+      font-weight: 700;
+      color: #a855f7;
+      background: rgba(168, 85, 247, 0.2) !important;
+      border-left-color: #a855f7 !important;
+    }
+    
+    /* Scrollbar customization */
+    .controls::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .controls::-webkit-scrollbar-track {
+      background: rgba(30, 27, 75, 0.3);
+      border-radius: 4px;
+    }
+    
+    .controls::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #9333ea, #a855f7);
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+    }
+    
+    .controls::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #a855f7, #c084fc);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="canvas-container">
+      <div class="info-panel">
+        <h2>⚛️ QUANTUM BLOCH SPHERE</h2>
+        <p>Multidimensional geometric representation of 2-level quantum states with advanced visualization.</p>
+      </div>
+      <div class="coordinates">
+        <div>θ: <span id="theta-coord">0.00</span>°</div>
+        <div>φ: <span id="phi-coord">0.00</span>°</div>
+        <div>|ψ⟩ = <span id="state-vector">|0⟩</span></div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <h3>⚡ Quantum Parameters</h3>
+        <div class="control-item">
+          <label>Polar Angle θ <span id="theta-value" class="value-display">0.00</span></label>
+          <input type="range" class="slider" id="theta-slider" min="0" max="180" value="0" step="0.1">
+        </div>
+        <div class="control-item">
+          <label>Azimutal Angle φ <span id="phi-value" class="value-display">0.00</span></label>
+          <input type="range" class="slider" id="phi-slider" min="0" max="360" value="0" step="0.1">
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <h3>🎯 Fundamental States</h3>
+        <button class="button" onclick="setState(0, 0)">|0⟩ Base</button>
+        <button class="button" onclick="setState(180, 0)">|1⟩ Excited</button>
+        <button class="button" onclick="setState(90, 0)">|+⟩ Superposition</button>
+        <button class="button" onclick="setState(90, 180)">|-⟩ Anti-Superp.</button>
+        <button class="button" onclick="setState(90, 90)">|+i⟩ Complex</button>
+        <button class="button" onclick="setState(90, 270)">|-i⟩ Anti-Complex</button>
+
+      </div>
+      
+      <div class="control-group">
+        <h3>🌀 Quantum Operators</h3>
+        <button class="button" onclick="applyPauliX()">Pauli-X (NOT)</button>
+        <button class="button" onclick="applyPauliY()">Pauli-Y</button>
+        <button class="button" onclick="applyPauliZ()">Pauli-Z (Phase)</button>
+        <button class="button" onclick="applyHadamard()">Hadamard (H)</button>
+        <button class="button" onclick="applyPhaseGate()">Phase Gate</button>
+        <button class="button" onclick="applyTGate()">T Gate</button>
+      </div>
+      
+      <div class="control-group">
+        <h3>🎨 Visual Controlsh3>
+        <div class="control-item">
+          <label>Blur <span id="opacity-value" class="value-display">0.25</span></label>
+          <input type="range" class="slider" id="opacity-slider" min="0" max="100" value="25">
+        </div>
+        <div class="control-item">
+          <label>Rotate Velocity <span id="speed-value" class="value-display">1.0</span></label>
+          <input type="range" class="slider" id="speed-slider" min="0" max="50" value="10">
+        </div>
+        <button class="button" onclick="toggleAnimation()">🔄 Auto-Rotate</button>
+        <button class="button" onclick="toggleWireframe()">📐 Wireframe</button>
+        <button class="button" onclick="resetView()">🎯 Reset View</button>
+        <button class="button" onclick="randomState()">🎲 Aleatory State</button>
+      </div>
+      
+      <div class="control-group state-info">
+        <div id="current-state">|ψ⟩ = |0⟩</div>
+        <div>Coord. X: <span id="cart-x">0.00</span></div>
+        <div>Coord. Y: <span id="cart-y">0.00</span></div>
+        <div>Coord. Z: <span id="cart-z">1.00</span></div>
+        <div>P(|0⟩): <span id="prob-0">100%</span></div>
+        <div>P(|1⟩): <span id="prob-1">0%</span></div>
+        <div>Purity: <span id="purity">1.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let scene, camera, renderer, sphere, vector, arrow, isAnimating = false, wireframeMode = false;
+    let theta = 0, phi = 0, animationSpeed = 0.003;
+    let particles = [];
+
+
+    window.addEventListener('load', () => {
+      const container = document.querySelector('.canvas-container');
+      scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x0a0a0f, 10, 50);
+
+
+      camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(3.5, 3.5, 3.5);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true,
+        powerPreference: "high-performance"
+      });
+
+
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
+
+
+
+      // faça se a luz
+      const ambientLight = new THREE.AmbientLight(0x9333ea, 0.4);
+      scene.add(ambientLight);
+      
+      const directionalLight = new THREE.DirectionalLight(0xa855f7, 0.8);
+      directionalLight.position.set(5, 5, 5);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.mapSize.width = 2048;
+      directionalLight.shadow.mapSize.height = 2048;
+      scene.add(directionalLight);
+
+      const pointLight1 = new THREE.PointLight(0xc084fc, 0.6, 20);
+      pointLight1.position.set(3, 3, 3);
+      scene.add(pointLight1);
+
+      const pointLight2 = new THREE.PointLight(0x9333ea, 0.4, 15);
+      pointLight2.position.set(-3, -3, -3);
+      scene.add(pointLight2);
+
+      // esfera (e mateiral tb)
+      sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 128, 128),
+        new THREE.MeshPhysicalMaterial({ 
+          color: 0x9333ea,
+          metalness: 0.3,
+          roughness: 0.1,
+          transparent: true, 
+          opacity: 0.25,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.1,
+          transmission: 0.3,
+          thickness: 0.5,
+          envMapIntensity: 1.5
+        })
+      );
+      sphere.receiveShadow = true;
+      scene.add(sphere);
+
+
+
+      // eixos
+      const axisLength = 1.8;
+      const axisRadius = 0.02;
+      
+      // X - vermelho/roxo
+      const xAxisGeometry = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength * 2, 32);
+      const xAxis = new THREE.Mesh(xAxisGeometry, new THREE.MeshLambertMaterial({ 
+        color: 0xff6b9d,
+        emissive: 0x4a0e4e,
+        emissiveIntensity: 0.2
+      }));
+      xAxis.rotation.z = Math.PI / 2;
+      scene.add(xAxis);
+
+      // Y - verde/roxo
+      const yAxis = new THREE.Mesh(xAxisGeometry, new THREE.MeshLambertMaterial({ 
+        color: 0x4ade80,
+        emissive: 0x2e4a32,
+        emissiveIntensity: 0.2
+      }));
+      scene.add(yAxis);
+
+      // Z - azul/roxo
+      const zAxis = new THREE.Mesh(xAxisGeometry, new THREE.MeshLambertMaterial({ 
+        color: 0x60a5fa,
+        emissive: 0x1e3a8a,
+        emissiveIntensity: 0.2
+      }));
+      zAxis.rotation.x = Math.PI / 2;
+      scene.add(zAxis);
+
+      // agora as labels dos eixos
+      const labelGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+      
+      const xLabel = new THREE.Mesh(labelGeometry, new THREE.MeshLambertMaterial({ 
+        color: 0xff6b9d,
+        emissive: 0xff6b9d,
+        emissiveIntensity: 0.5
+      }));
+      xLabel.position.set(axisLength + 0.2, 0, 0);
+      scene.add(xLabel);
+
+      const yLabel = new THREE.Mesh(labelGeometry, new THREE.MeshLambertMaterial({ 
+        color: 0x4ade80,
+        emissive: 0x4ade80,
+        emissiveIntensity: 0.5
+      }));
+      yLabel.position.set(0, axisLength + 0.2, 0);
+      scene.add(yLabel);
+
+      const zLabel = new THREE.Mesh(labelGeometry, new THREE.MeshLambertMaterial({ 
+        color: 0x60a5fa,
+        emissive: 0x60a5fa,
+        emissiveIntensity: 0.5
+      }));
+      zLabel.position.set(0, 0, axisLength + 0.2);
+      scene.add(zLabel);
+
+      // wireframe da esfera
+      const wireframe = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 32, 32),
+        new THREE.MeshBasicMaterial({ 
+          color: 0xa855f7, 
+          wireframe: true, 
+          transparent: true, 
+          opacity: 0.4
+        })
+      );
+      scene.add(wireframe);
+
+      // vetor de estado
+      vector = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1)]),
+        new THREE.LineBasicMaterial({ 
+          color: 0xffffff,
+          linewidth: 3
+        })
+      );
+      
+      // Seta melhorada um pocuo
+      arrow = new THREE.Mesh(
+        new THREE.ConeGeometry(0.06, 0.25, 32),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          emissive: 0xa855f7,
+          emissiveIntensity: 0.8,
+          metalness: 0.8,
+          roughness: 0.1,
+          clearcoat: 1.0
+        })
+      );
+      arrow.castShadow = true;
+      arrow.rotation.x = Math.PI / 2;
+      arrow.position.set(0, 0, 1);
+      vector.add(arrow);
+      scene.add(vector);
+
+      // partículas (efeito)
+      createParticleSystem();
+
+      // event lister
+      document.getElementById('theta-slider').addEventListener('input', e => { 
+        theta = +e.target.value; 
+        updateState(); 
+      });
+      
+      document.getElementById('phi-slider').addEventListener('input', e => { 
+        phi = +e.target.value; 
+        updateState(); 
+      });
+      
+      document.getElementById('opacity-slider').addEventListener('input', e => {
+        const op = +e.target.value / 100;
+        sphere.material.opacity = op;
+        document.getElementById('opacity-value').textContent = op.toFixed(2);
+      });
+
+      document.getElementById('speed-slider').addEventListener('input', e => {
+        animationSpeed = +e.target.value / 1000;
+        document.getElementById('speed-value').textContent = (+e.target.value / 10).toFixed(1);
+      });
+
+      // controle dem ouse
+      let mouseDown = false;
+      let mouseX = 0;
+      let mouseY = 0;
+
+      renderer.domElement.addEventListener('mousedown', (e) => {
+        mouseDown = true;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      renderer.domElement.addEventListener('mouseup', () => {
+        mouseDown = false;
+      });
+
+      renderer.domElement.addEventListener('mousemove', (e) => {
+        if (!mouseDown) return;
+        
+        const deltaX = e.clientX - mouseX;
+        const deltaY = e.clientY - mouseY;
+        
+        scene.rotation.y += deltaX * 0.01;
+        scene.rotation.x += deltaY * 0.01;
+        
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      // Scroll para zoom
+      renderer.domElement.addEventListener('wheel', (e) => {
+        const zoom = e.deltaY > 0 ? 1.1 : 0.9;
+        camera.position.multiplyScalar(zoom);
+        camera.lookAt(0, 0, 0);
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      updateState();
+      animate();
+    });
+
+    function createParticleSystem() {
+      const particleCount = 200;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 10;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+
+        const color = new THREE.Color();
+        color.setHSL(0.8 + Math.random() * 0.1, 0.8, 0.5 + Math.random() * 0.5);
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.05,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending
+      });
+
+      particles = new THREE.Points(geometry, material);
+      scene.add(particles);
+    }
+
+    function updateState() {
+      const θ = theta * Math.PI / 180;
+      const φ = phi * Math.PI / 180;
+      const x = Math.sin(θ) * Math.cos(φ);
+      const y = Math.sin(θ) * Math.sin(φ);
+      const z = Math.cos(θ);
+
+      // atualiza a  geometria do vetor
+      vector.geometry.dispose();
+      vector.geometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0), 
+        new THREE.Vector3(x, y, z)
+      ]);
+      
+      // Posiciona a seta
+      arrow.position.set(x, y, z);
+      const direction = new THREE.Vector3(x, y, z).normalize();
+      arrow.lookAt(direction.multiplyScalar(2));
+
+      // displays
+      document.getElementById('theta-value').textContent = theta.toFixed(1);
+      document.getElementById('phi-value').textContent = phi.toFixed(1);
+      document.getElementById('theta-coord').textContent = theta.toFixed(1);
+      document.getElementById('phi-coord').textContent = phi.toFixed(1);
+      document.getElementById('cart-x').textContent = x.toFixed(3);
+      document.getElementById('cart-y').textContent = y.toFixed(3);
+      document.getElementById('cart-z').textContent = z.toFixed(3);
+
+      // Calcula  as probabilidades
+      const prob0 = Math.cos(θ / 2) ** 2;
+      const prob1 = Math.sin(θ / 2) ** 2;
+      document.getElementById('prob-0').textContent = (prob0 * 100).toFixed(1) + '%';
+      document.getElementById('prob-1').textContent = (prob1 * 100).toFixed(1) + '%';
+      document.getElementById('purity').textContent = (prob0 ** 2 + prob1 ** 2).toFixed(3);
+
+      // Formata o estado 
+      const alpha = Math.cos(θ / 2);
+      const beta = Math.sin(θ / 2);
+      let stateStr = '';
+      
+      if (Math.abs(alpha) > 0.001) {
+        stateStr += `${alpha.toFixed(3)}|0⟩`;
+      }
+      if (Math.abs(beta) > 0.001) {
+        if (stateStr) stateStr += ' + ';
+        if (Math.abs(φ) > 0.001) {
+          stateStr += `e^(i${(φ * Math.PI / 180).toFixed(2)})${beta.toFixed(3)}|1⟩`;
+        } else {
+          stateStr += `${beta.toFixed(3)}|1⟩`;
+        }
+      }
+      
+      document.getElementById('state-vector').textContent = stateStr || '|0⟩';
+      document.getElementById('current-state').textContent = `|ψ⟩ = ${stateStr || '|0⟩'}`;
+
+      // Atualiza cor da esfera baseada no estado
+      const hue = (φ / 360) * 0.3 + 0.7; // Range roxo
+      const saturation = 0.8;
+      const lightness = 0.3 + (Math.sin(θ * Math.PI / 180) * 0.2);
+      sphere.material.color.setHSL(hue, saturation, lightness);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      // Rotação automática
+      if (isAnimating) {
+        scene.rotation.y += animationSpeed;
+        scene.rotation.x += animationSpeed * 0.3;
+      }
+      
+      // Animacao das partículas
+      if (particles) {
+        particles.rotation.y += 0.001;
+        particles.rotation.x += 0.0005;
+        
+        const positions = particles.geometry.attributes.position.array;
+        for (let i = 0; i < positions.length; i += 3) {
+          positions[i + 1] += Math.sin(Date.now() * 0.001 + i) * 0.001;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+      }
+      
+      // Efeito "pulsante" na seta
+      const pulse = Math.sin(Date.now() * 0.005) * 0.1 + 1;
+      arrow.scale.set(pulse, pulse, pulse);
+      
+      renderer.render(scene, camera);
+    }
+
+    // Funções de controle
+    function setState(t, p) { 
+      theta = t; 
+      phi = p; 
+      document.getElementById('theta-slider').value = t;
+      document.getElementById('phi-slider').value = p;
+      updateState(); 
+    }
+
+    function applyPauliX() { 
+      theta = 180 - theta; 
+      phi = (phi + 180) % 360; 
+      document.getElementById('theta-slider').value = theta;
+      document.getElementById('phi-slider').value = phi;
+      updateState(); 
+    }
+
+    function applyPauliY() { 
+      theta = 180 - theta; 
+      phi = (360 - phi) % 360; 
+      document.getElementById('theta-slider').value = theta;
+      document.getElementById('phi-slider').value = phi;
+      updateState(); 
+    }
+
+    function applyPauliZ() { 
+      phi = (phi + 180) % 360; 
+      document.getElementById('phi-slider').value = phi;
+      updateState(); 
+    }
+
+    function applyHadamard() {
+      if (Math.abs(theta) < 1) setState(90, 0);
+      else if (Math.abs(theta - 180) < 1) setState(90, 180);
+      else if (Math.abs(theta - 90) < 1 && Math.abs(phi) < 1) setState(0, 0);
+      else if (Math.abs(theta - 90) < 1 && Math.abs(phi - 180) < 1) setState(180, 0);
+      else setState(theta, (phi + 90) % 360);
+    }
+
+    function applyPhaseGate() {
+      phi = (phi + 90) % 360;
+      document.getElementById('phi-slider').value = phi;
+      updateState();
+    }
+
+    function applyTGate() {
+      phi = (phi + 45) % 360;
+      document.getElementById('phi-slider').value = phi;
+      updateState();
+    }
+
+    function toggleAnimation() { 
+      isAnimating = !isAnimating; 
+      const btn = event.target;
+      btn.textContent = isAnimating ? '⏸️ Pause' : '🔄 Auto-Rotate';
+    }
+
+    function toggleWireframe() {
+      wireframeMode = !wireframeMode;
+      sphere.material.wireframe = wireframeMode;
+      const btn = event.target;
+      btn.textContent = wireframeMode ? '🌐 Solid' : '📐 Wireframe';
+    }
+
+    function resetView() {
+      camera.position.set(3.5, 3.5, 3.5);
+      camera.lookAt(0, 0, 0);
+      scene.rotation.set(0, 0, 0);
+      isAnimating = false;
+      document.querySelector('button[onclick="toggleAnimation()"]').textContent = '🔄 Auto-Rotate';
+    }
+
+    function randomState() {
+      const newTheta = Math.random() * 180;
+      const newPhi = Math.random() * 360;
+      
+      // Animação suave para o novo estado
+      const startTheta = theta;
+      const startPhi = phi;
+      const duration = 1000;
+      const startTime = Date.now();
+      
+      function animateToState() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        
+        theta = startTheta + (newTheta - startTheta) * easeProgress;
+        phi = startPhi + (newPhi - startPhi) * easeProgress;
+        
+        document.getElementById('theta-slider').value = theta;
+        document.getElementById('phi-slider').value = phi;
+        updateState();
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateToState);
+        }
+      }
+      
+      animateToState();
+    }
+
+    // shortcuts
+    document.addEventListener('keydown', (e) => {
+      switch(e.key.toLowerCase()) {
+        case 'x': applyPauliX(); break;
+        case 'y': applyPauliY(); break;
+        case 'z': applyPauliZ(); break;
+        case 'h': applyHadamard(); break;
+        case 'r': randomState(); break;
+        case ' ': e.preventDefault(); toggleAnimation(); break;
+        case '0': setState(0, 0); break;
+        case '1': setState(180, 0); break;
+        case '+': setState(90, 0); break;
+        case '-': setState(90, 180); break;
+      }
+    });
+
+    // easter egg (hehe)
+    let konamiCode = [];
+    const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+    
+    document.addEventListener('keydown', (e) => {
+      konamiCode.push(e.code);
+      if (konamiCode.length > konami.length) {
+        konamiCode.shift();
+      }
+      
+      if (konamiCode.length === konami.length && 
+          konamiCode.every((key, i) => key === konami[i])) {
+        // ativar ele
+        sphere.material.emissive.setHex(0x9333ea);
+        sphere.material.emissiveIntensity = 0.5;
+        setTimeout(() => {
+          sphere.material.emissive.setHex(0x000000);
+          sphere.material.emissiveIntensity = 0;
+        }, 2000);
+        
+        // Efeito
+        for (let i = 0; i < 10; i++) {
+          setTimeout(() => randomState(), i * 200);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
