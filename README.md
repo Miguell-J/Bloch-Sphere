@@ -1,5 +1,7 @@
 # Quantum Bloch Sphere Visualization
 
+![](bloch.png)
+
 A cutting-edge, interactive web application for visualizing two-level quantum states on a Bloch sphere, built with modern web technologies for a seamless and immersive experience.
 
 ## 🌟 Features
